@@ -20,3 +20,5 @@ Pillow
 sentencepiece
 pygraphviz
 pydot
+sentence-transformers
+trl
