@@ -1,0 +1,10 @@
+{"head":"Aspirin","relation":"treats","tail":"Headache"}
+{"head":"Ibuprofen","relation":"treats","tail":"Headache"}
+{"head":"Aspirin","relation":"targets","tail":"PTGS1"}
+{"head":"PTGS1","relation":"associated_with","tail":"Inflammation"}
+{"head":"Metformin","relation":"treats","tail":"Type 2 Diabetes"}
+{"head":"INS","relation":"associated_with","tail":"Type 2 Diabetes"}
+{"head":"Metformin","relation":"targets","tail":"AMPK"}
+{"head":"AMPK","relation":"associated_with","tail":"Metabolism"}
+{"head":"Trastuzumab","relation":"treats","tail":"Breast Cancer"}
+{"head":"ERBB2","relation":"associated_with","tail":"Breast Cancer"}
