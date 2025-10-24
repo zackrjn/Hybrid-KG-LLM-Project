@@ -1,3 +1,13 @@
+# each new terminal session
+conda activate hybridkg
+cd /mnt/c/Users/saksh/Desktop/Hybrid-KG-LLM-Project
+export PYTHONPATH=$PWD
+python scripts/eval_link_prediction.py \
+  --triples_jsonl data/sample_triples.jsonl \
+  --predictions_jsonl outputs/demo_linkpred_preds.jsonl
+
+
+
 ## Goal
 1. Develop a comprehensive new research paper titled "Hybrid Vision-Textual Reasoning with Similarity-Augmented Instruction Tuning for Knowledge Graph LLMs" that advances the field of LLM-based graph reasoning specifically for Knowledge Graphs (KGs) by integrating and extending the contributions from three parent papers:
     - (1) "Similarity-based Neighbor Selection for Graph LLMs" (SNS) by Rui Li et al. (arXiv v1, last updated February 6, 2024), which introduces a training-free, inductive method using SimCSE for semantic similarity-based neighbor ranking to mitigate over-squashing and heterophily in text-attributed graphs (TAGs), achieving 3-9% accuracy improvements on datasets like Cora (citation network with 2708 nodes, 7 classes), PubMed (19717 nodes, 3 classes), Amazon-Computers (13381 nodes, 10 classes), Amazon-Photo (7487 nodes, 8 classes), Coauthor-CS (18333 nodes, 15 classes), and ogbn-arxiv (169343 nodes, 40 classes) when integrated into prompts for models like GPT-3.5-Turbo and GPT-4, outperforming vanilla GNNs and setting SOTA on PubMed via simple prompt interactions;

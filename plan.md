@@ -20,7 +20,7 @@
 1) Wire SNS selection into dataset prep
 
 - Update `scripts/prepare_hybrid_dataset.py` to optionally:
-- load entity texts (JSONL: `{id, text}`), compute SimCSE embeddings, select top-k neighbors (`--sns_top_k`, `--sns_threshold`)
+- load entity texts (JSONL: `{id, text}`), compute SimCSE embeddings (default: `princeton-nlp/sup-simcse-bert-base-uncased`, fallback to `sentence-transformers/all-MiniLM-L6-v2`), select top-k neighbors (`--sns_top_k`, `--sns_threshold`)
 - construct chosen/rejected pairs using neighbor quality; render subgraph images via `src/kg_visualize.py`
 - Leverage `src/sns_ranker.py` and `src/config.py` defaults.
 
@@ -54,7 +54,7 @@
 2) Hybrid dataset construction
 
 - `scripts/prepare_primekg_hybrid.py` (build 10k–20k SFT+DPO examples):
-- SNS-filtered neighbors (SimCSE), render adaptive layouts (force-directed for sparse, dot for pathway-like)
+- SNS-filtered neighbors (SimCSE default with MiniLM fallback), render adaptive layouts (force-directed for sparse, dot for pathway-like)
 - Prompting via `src/prompting.py` with medical tasks (link prediction, multi-hop QA)
 - 80/10/10 split; store under `data/primekg/hybrid/`
 

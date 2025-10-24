@@ -1,10 +1,10 @@
 ﻿from typing import Dict, Any
 
 from datasets import load_dataset
-from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments
-from trl import DPOTrainer
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from trl import DPOTrainer, DPOConfig as TRLDPOConfig
 
-from .config import HybridConfig, DPOConfig
+from .config import HybridConfig, DPOConfig as LocalDPOConfig
 
 
 def _prepare_pairs(example: Dict[str, Any]) -> Dict[str, Any]:
@@ -35,13 +35,17 @@ def train_hybrid_dpo(config: Dict[str, Any]) -> None:
     cfg = HybridConfig()
     if config:
         cfg = _apply_overrides(cfg, config)
-    dpo_cfg: DPOConfig = cfg.dpo
+    dpo_cfg: LocalDPOConfig = cfg.dpo
 
     tokenizer = AutoTokenizer.from_pretrained(cfg.model.base_model_name_or_path, use_fast=True)
     tokenizer.padding_side = "right"
     tokenizer.truncation_side = "right"
+    if tokenizer.pad_token is None and hasattr(tokenizer, "eos_token") and tokenizer.eos_token is not None:
+        tokenizer.pad_token = tokenizer.eos_token
 
     model = AutoModelForCausalLM.from_pretrained(cfg.model.base_model_name_or_path)
+    if getattr(tokenizer, "pad_token_id", None) is not None and getattr(model.config, "pad_token_id", None) is None:
+        model.config.pad_token_id = tokenizer.pad_token_id
 
     dataset = load_dataset("json", data_files={
         "train": cfg.data.train_path,
@@ -50,7 +54,7 @@ def train_hybrid_dpo(config: Dict[str, Any]) -> None:
     train_ds = dataset["train"].map(_prepare_pairs)
     eval_ds = dataset["validation"].map(_prepare_pairs)
 
-    training_args = TrainingArguments(
+    training_args = TRLDPOConfig(
         output_dir=dpo_cfg.output_dir,
         per_device_train_batch_size=dpo_cfg.per_device_train_batch_size,
         per_device_eval_batch_size=dpo_cfg.per_device_eval_batch_size,
@@ -62,16 +66,15 @@ def train_hybrid_dpo(config: Dict[str, Any]) -> None:
         warmup_ratio=dpo_cfg.warmup_ratio,
         lr_scheduler_type=dpo_cfg.lr_scheduler_type,
         deepspeed=dpo_cfg.deepspeed,
-        report_to=["none"],
+        beta=dpo_cfg.beta,
     )
 
     trainer = DPOTrainer(
         model=model,
         ref_model=None,
-        beta=dpo_cfg.beta,
         train_dataset=train_ds,
         eval_dataset=eval_ds,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
         args=training_args,
     )
 

@@ -23,7 +23,7 @@ References:
 python scripts/prepare_hybrid_dataset.py --triples_jsonl data/sample_triples.jsonl --out_dir data/hybrid --limit 50
 ```
 
-2) (Optional) Rank neighbors via SimCSE in your data prep (used internally by prompts): see `src/sns_ranker.py`.
+2) (Optional) Rank neighbors via SimCSE (default: `princeton-nlp/sup-simcse-bert-base-uncased`, fallback to `sentence-transformers/all-MiniLM-L6-v2`) in your data prep: see `src/sns_ranker.py`.
 
 3) Train Hybrid DPO on the demo data:
 

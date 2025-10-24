@@ -17,13 +17,26 @@ def _cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
 
 
 class SNSSimilarityRanker:
-    def __init__(self, model_name: str = "princeton-nlp/sup-simcse-bert-base-uncased") -> None:
+    def __init__(self, model_name: str = "princeton-nlp/sup-simcse-bert-base-uncased", device: str = "cpu", batch_size: int = 256) -> None:
         if SentenceTransformer is None:
             raise ImportError("sentence-transformers is required for SNSSimilarityRanker. Please install it.")
-        self.model = SentenceTransformer(model_name)
+        try:
+            self.model = SentenceTransformer(model_name, device=device)
+            self.active_model_name = model_name
+        except Exception:
+            fallback = "sentence-transformers/all-MiniLM-L6-v2"
+            self.model = SentenceTransformer(fallback, device=device)
+            self.active_model_name = fallback
+        self.batch_size = batch_size
 
     def encode(self, texts: List[str]) -> np.ndarray:
-        emb = self.model.encode(texts, batch_size=64, show_progress_bar=False, normalize_embeddings=False)
+        emb = self.model.encode(
+            texts,
+            batch_size=self.batch_size,
+            show_progress_bar=False,
+            normalize_embeddings=False,
+            device=None,
+        )
         return np.array(emb, dtype=np.float32)
 
     def rank_neighbors(self,

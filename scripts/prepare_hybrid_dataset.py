@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import json
 from typing import Dict, List, Tuple, Optional
 
@@ -85,7 +87,11 @@ def build_demo_pairs(triples: List[Tuple[str, str, str]],
                      use_sns: bool = False,
                      entity_texts_jsonl: Optional[str] = None,
                      sns_top_k: int = 5,
-                     sns_threshold: float = 0.0) -> None:
+                     sns_threshold: float = 0.0,
+                     sns_model: Optional[str] = None,
+                     sns_device: str = "cpu",
+                     sns_batch_size: int = 256,
+                     emb_cache_npz: Optional[str] = None) -> None:
     os.makedirs(out_dir, exist_ok=True)
     images_dir = os.path.join(out_dir, "images")
     os.makedirs(images_dir, exist_ok=True)
@@ -93,14 +99,57 @@ def build_demo_pairs(triples: List[Tuple[str, str, str]],
     out_path = os.path.join(out_dir, "train.jsonl")
     val_path = os.path.join(out_dir, "val.jsonl")
 
-    half = max(1, limit // 2)
+    total = min(limit, len(triples))
+    half = max(1, total // 2) if total >= 2 else 1
 
     id2text = _load_entity_texts(entity_texts_jsonl)
     adj = _build_adjacency(triples)
-    ranker = SNSSimilarityRanker() if use_sns else None
+    # Optional embedding cache
+    emb_cache: Dict[str, np.ndarray] = {}
+    if emb_cache_npz and os.path.exists(emb_cache_npz):
+        try:
+            import numpy as _np
+            loaded = _np.load(emb_cache_npz, allow_pickle=True)
+            keys = loaded["keys"].tolist()
+            vecs = loaded["vecs"]
+            emb_cache = {k: vecs[i] for i, k in enumerate(keys)}
+        except Exception:
+            emb_cache = {}
+
+    # Initialize ranker (with device/batch size)
+    if use_sns:
+        model_name = sns_model or "princeton-nlp/sup-simcse-bert-base-uncased"
+        ranker = SNSSimilarityRanker(model_name=model_name, device=sns_device, batch_size=sns_batch_size)
+    else:
+        ranker = None
 
     with open(out_path, "w", encoding="utf-8") as f_train, open(val_path, "w", encoding="utf-8") as f_val:
-        for idx, (h, r, t) in enumerate(triples[:limit]):
+        if total == 1:
+            h, r, t = triples[0]
+            img_path = os.path.join(images_dir, f"sample_0.png")
+            selected = []
+            if use_sns and ranker is not None:
+                selected = _select_sns_neighbors(
+                    h, r, t, adj, id2text, ranker, top_k=sns_top_k, threshold=sns_threshold
+                )
+            if not selected:
+                selected = [(h, r, t)]
+            render_kg(selected, img_path)
+
+            lines = [
+                f"Question: Given the KG snippet, what is the relation between {h} and {t}?",
+                "Relevant KG triples:",
+            ]
+            for hh, rr, tt in selected:
+                lines.append(f"- ({hh}) -[{rr}]-> ({tt})")
+            lines.append("Answer:")
+            prompt = "\n".join(lines)
+            item = {"prompt": prompt, "chosen": r, "rejected": "unknown", "image": img_path}
+            f_train.write(json.dumps(item, ensure_ascii=False) + "\n")
+            f_val.write(json.dumps(item, ensure_ascii=False) + "\n")
+            return
+
+        for idx, (h, r, t) in enumerate(triples[:total]):
             img_path = os.path.join(images_dir, f"sample_{idx}.png")
             if use_sns and ranker is not None:
                 selected = _select_sns_neighbors(
@@ -132,6 +181,17 @@ def build_demo_pairs(triples: List[Tuple[str, str, str]],
             else:
                 f_val.write(json.dumps(item, ensure_ascii=False) + "\n")
 
+    # Save embedding cache if requested
+    if emb_cache_npz and use_sns:
+        try:
+            import numpy as _np
+            keys = list(emb_cache.keys())
+            if keys:
+                vecs = _np.stack([emb_cache[k] for k in keys])
+                _np.savez_compressed(emb_cache_npz, keys=_np.array(keys, dtype=object), vecs=vecs)
+        except Exception:
+            pass
+
 
 if __name__ == "__main__":
     import argparse
@@ -144,6 +204,10 @@ if __name__ == "__main__":
     parser.add_argument("--entity_texts_jsonl", type=str, default=None)
     parser.add_argument("--sns_top_k", type=int, default=5)
     parser.add_argument("--sns_threshold", type=float, default=0.0)
+    parser.add_argument("--sns_model", type=str, default=None, help="SentenceTransformers model (e.g., princeton-nlp/sup-simcse-bert-base-uncased)")
+    parser.add_argument("--sns_device", type=str, default="cpu", help="cuda or cpu")
+    parser.add_argument("--sns_batch_size", type=int, default=256)
+    parser.add_argument("--emb_cache_npz", type=str, default=None, help="Path to NPZ cache for entity embeddings")
     args = parser.parse_args()
 
     triples = read_triples_jsonl(args.triples_jsonl)
@@ -155,4 +219,8 @@ if __name__ == "__main__":
         entity_texts_jsonl=args.entity_texts_jsonl,
         sns_top_k=args.sns_top_k,
         sns_threshold=args.sns_threshold,
+        sns_model=args.sns_model,
+        sns_device=args.sns_device,
+        sns_batch_size=args.sns_batch_size,
+        emb_cache_npz=args.emb_cache_npz,
     )
