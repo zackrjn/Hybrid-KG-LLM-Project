@@ -83,7 +83,6 @@ def train_hybrid_dpo(config: Dict[str, Any]) -> None:
         eval_dataset=eval_ds,
         processing_class=tokenizer,
         args=training_args,
-        disable_reference_model=True,
     )
 
     trainer.train()
