@@ -45,7 +45,7 @@ def train_hybrid_dpo(config: Dict[str, Any]) -> None:
 
     model = AutoModelForCausalLM.from_pretrained(
         cfg.model.base_model_name_or_path,
-        torch_dtype="auto",
+        dtype="auto",
     )
     if getattr(cfg.model, "gradient_checkpointing", True) and hasattr(model, "gradient_checkpointing_enable"):
         model.gradient_checkpointing_enable()
@@ -74,7 +74,6 @@ def train_hybrid_dpo(config: Dict[str, Any]) -> None:
         beta=dpo_cfg.beta,
         max_length=512,
         max_prompt_length=256,
-        use_reference_model=False,
     )
 
     trainer = DPOTrainer(
@@ -84,6 +83,7 @@ def train_hybrid_dpo(config: Dict[str, Any]) -> None:
         eval_dataset=eval_ds,
         processing_class=tokenizer,
         args=training_args,
+        disable_reference_model=True,
     )
 
     trainer.train()
