@@ -43,7 +43,12 @@ def train_hybrid_dpo(config: Dict[str, Any]) -> None:
     if tokenizer.pad_token is None and hasattr(tokenizer, "eos_token") and tokenizer.eos_token is not None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    model = AutoModelForCausalLM.from_pretrained(cfg.model.base_model_name_or_path)
+    model = AutoModelForCausalLM.from_pretrained(
+        cfg.model.base_model_name_or_path,
+        torch_dtype="auto",
+    )
+    if getattr(cfg.model, "gradient_checkpointing", True) and hasattr(model, "gradient_checkpointing_enable"):
+        model.gradient_checkpointing_enable()
     if getattr(tokenizer, "pad_token_id", None) is not None and getattr(model.config, "pad_token_id", None) is None:
         model.config.pad_token_id = tokenizer.pad_token_id
 
@@ -67,6 +72,9 @@ def train_hybrid_dpo(config: Dict[str, Any]) -> None:
         lr_scheduler_type=dpo_cfg.lr_scheduler_type,
         deepspeed=dpo_cfg.deepspeed,
         beta=dpo_cfg.beta,
+        max_length=512,
+        max_prompt_length=256,
+        use_reference_model=False,
     )
 
     trainer = DPOTrainer(
