@@ -72,8 +72,8 @@ def train_hybrid_dpo(config: Dict[str, Any]) -> None:
         lr_scheduler_type=dpo_cfg.lr_scheduler_type,
         deepspeed=dpo_cfg.deepspeed,
         beta=dpo_cfg.beta,
-        max_length=512,
-        max_prompt_length=256,
+        max_length=384,
+        max_prompt_length=192,
     )
 
     trainer = DPOTrainer(
