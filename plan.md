@@ -91,3 +91,14 @@
 - Memory on PrimeKG: subgraph sampling; gradient checkpointing; DeepSpeed ZeRO-3.
 - LFS weights: keep out of repo; document optional downloads.
 - Licensing & Safety: retain upstream LICENSEs; attribute PrimeKG; non-clinical-use disclaimer.
+
+## Provider Fallback (Temporary: GPT-5 → Groq)
+
+- Until org verification enables direct GPT-5 use in Cursor settings, all GPT-5–assigned experiment tasks (e.g., `dpo-grid`) will run via Groq using their OpenAI-compatible endpoint.
+- Worktrees:
+  - Keep existing: `agent/dpo-grid-gpt5-...` (reserved for when verification completes)
+  - New temporary: `agent/dpo-grid-groq-...` (active for ablation work now)
+- Keys:
+  - Ensure `GROQ_API_KEY` is set locally and on Roar (for any code paths needing API access)
+- Revert plan:
+  - When org is verified, resume using the GPT-5 worktree and provider by switching the active agent window back to `agent/dpo-grid-gpt5-...`
