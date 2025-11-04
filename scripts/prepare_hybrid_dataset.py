@@ -134,6 +134,7 @@ def build_demo_pairs(triples: List[Tuple[str, str, str]],
         ranker = None
 
     with open(out_path, "w", encoding="utf-8") as f_train, open(val_path, "w", encoding="utf-8") as f_val:
+        # single-item fast-path
         if total == 1:
             h, r, t = triples_window[0]
             img_path = os.path.join(images_dir, f"sample_0.png")
@@ -145,7 +146,7 @@ def build_demo_pairs(triples: List[Tuple[str, str, str]],
             if not selected:
                 selected = [(h, r, t)]
             if render_images and 0 < max_images:
-            render_kg(selected, img_path)
+                render_kg(selected, img_path)
             else:
                 img_path = None
 

@@ -8,7 +8,7 @@
 #SBATCH -e %x.%j.err
 
 module load anaconda
-conda activate yourenv
+conda activate hybridkg
 export MPLBACKEND=Agg
 
 python scripts/prepare_hybrid_dataset.py \
