@@ -204,8 +204,13 @@ def build_demo_pairs(triples: List[Tuple[str, str, str]],
         if 'tasks' in locals() and tasks:
             if num_workers and num_workers > 0:
                 from concurrent.futures import ProcessPoolExecutor
+                # map render_kg over two iterables (edges, path) to avoid non-picklable lambdas
                 with ProcessPoolExecutor(max_workers=num_workers) as ex:
-                    list(ex.map(lambda x: render_kg(*x), tasks))
+                    list(ex.map(
+                        render_kg,
+                        (edges for edges, _ in tasks),
+                        (path for _, path in tasks),
+                    ))
             else:
                 for edges, path in tasks:
                     render_kg(edges, path)
