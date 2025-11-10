@@ -12,6 +12,9 @@ conda activate /storage/work/$USER/envs/hybridkg
 export PYTHONNOUSERSITE=1
 unset PYTHONPATH
 export MPLBACKEND=Agg
+export TOKENIZERS_PARALLELISM=false
+export HF_HOME=/scratch/$USER/hf
+mkdir -p "$HF_HOME"
 
 python scripts/prepare_hybrid_dataset.py \
   --triples_jsonl /scratch/$USER/primekg/triples.jsonl \
@@ -20,7 +23,7 @@ python scripts/prepare_hybrid_dataset.py \
   --use_sns \
   --entity_texts_jsonl /scratch/$USER/primekg/entity_texts.jsonl \
   --sns_model sentence-transformers/all-MiniLM-L6-v2 \
-  --sns_device cuda \
+  --sns_device cpu \
   --sns_batch_size 1024 \
   --sns_top_k 3 \
   --sns_threshold 0.0 \

@@ -8,6 +8,11 @@ try:
 except Exception as e:  # pragma: no cover
     SentenceTransformer = None  # type: ignore
 
+try:
+    import torch
+except Exception:  # pragma: no cover
+    torch = None  # type: ignore
+
 
 def _cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
     denom = (np.linalg.norm(a) * np.linalg.norm(b))
@@ -20,12 +25,16 @@ class SNSSimilarityRanker:
     def __init__(self, model_name: str = "princeton-nlp/sup-simcse-bert-base-uncased", device: str = "cpu", batch_size: int = 256) -> None:
         if SentenceTransformer is None:
             raise ImportError("sentence-transformers is required for SNSSimilarityRanker. Please install it.")
+        # Gracefully downgrade to CPU if CUDA is requested but unavailable
+        effective_device = device
+        if device and device.startswith("cuda") and (torch is None or not torch.cuda.is_available()):  # type: ignore[attr-defined]
+            effective_device = "cpu"
         try:
-            self.model = SentenceTransformer(model_name, device=device)
+            self.model = SentenceTransformer(model_name, device=effective_device)
             self.active_model_name = model_name
         except Exception:
             fallback = "sentence-transformers/all-MiniLM-L6-v2"
-            self.model = SentenceTransformer(fallback, device=device)
+            self.model = SentenceTransformer(fallback, device=effective_device)
             self.active_model_name = fallback
         self.batch_size = batch_size
 
