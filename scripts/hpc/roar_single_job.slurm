@@ -16,7 +16,7 @@ export TOKENIZERS_PARALLELISM=false
 export HF_HOME=/scratch/$USER/hf
 mkdir -p "$HF_HOME"
 
-python scripts/prepare_hybrid_dataset.py \
+/storage/work/$USER/envs/hybridkg/bin/python scripts/prepare_hybrid_dataset.py \
   --triples_jsonl /scratch/$USER/primekg/triples.jsonl \
   --out_dir /scratch/$USER/primekg/hybrid_minilm \
   --limit 5000 \
@@ -29,6 +29,6 @@ python scripts/prepare_hybrid_dataset.py \
   --sns_threshold 0.0 \
   --emb_cache_npz /scratch/$USER/primekg/emb_cache_minilm.npz \
   --num_workers 24 \
-  --max_images 5000
+  --max_images 500
 
 
