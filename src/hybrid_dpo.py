@@ -1,7 +1,7 @@
 ﻿from typing import Dict, Any
 
 from datasets import load_dataset
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, set_seed
 from trl import DPOTrainer, DPOConfig as TRLDPOConfig
 
 from .config import HybridConfig, DPOConfig as LocalDPOConfig
@@ -36,6 +36,12 @@ def train_hybrid_dpo(config: Dict[str, Any]) -> None:
     if config:
         cfg = _apply_overrides(cfg, config)
     dpo_cfg: LocalDPOConfig = cfg.dpo
+
+    # Ensure reproducibility across runs when seed varies in ablations
+    try:
+        set_seed(cfg.data.seed)
+    except Exception:
+        pass
 
     tokenizer = AutoTokenizer.from_pretrained(cfg.model.base_model_name_or_path, use_fast=True)
     tokenizer.padding_side = "right"
@@ -88,4 +94,9 @@ def train_hybrid_dpo(config: Dict[str, Any]) -> None:
 
     trainer.train()
     trainer.save_model(dpo_cfg.output_dir)
+    # Save trainer state so downstream tools can extract metrics (trainer_state.json)
+    try:
+        trainer.save_state()
+    except Exception:
+        pass
 
