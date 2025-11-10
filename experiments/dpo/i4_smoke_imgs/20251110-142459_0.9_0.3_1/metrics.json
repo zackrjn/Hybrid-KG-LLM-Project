@@ -1,0 +1,7 @@
+{
+  "train_examples": 150,
+  "val_examples": 150,
+  "elapsed_sec": 0.0,
+  "train_loss": null,
+  "eval_loss": null
+}
