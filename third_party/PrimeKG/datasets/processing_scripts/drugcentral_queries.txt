@@ -1,0 +1,9 @@
+createdb drugcentral
+# updated PrimeKG: updating DrugCentral version to 2023-05-10
+psql drugcentral < drugcentral.dump.05102023.sql
+
+select distinct * from structures
+right join
+(select * from omop_relationship where relationship_name in ('indication', 'contraindication', 'off-label use')) as drug_disease
+on structures.id = drug_disease.struct_id
+;

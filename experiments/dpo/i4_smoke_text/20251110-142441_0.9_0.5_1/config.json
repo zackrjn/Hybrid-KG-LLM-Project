@@ -1,0 +1,11 @@
+{
+  "threshold": 0.9,
+  "beta": 0.5,
+  "seed": 1,
+  "provider": "groq",
+  "model": "mistralai/Mistral-7B-Instruct-v0.2",
+  "max_samples": 200,
+  "train_jsonl": "data/primekg/hybrid_minilm_smoke/train.jsonl",
+  "val_jsonl": "data/primekg/hybrid_minilm_smoke/val.jsonl",
+  "dry_run": true
+}

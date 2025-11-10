@@ -1,0 +1,1 @@
+[20251110-142518] thr=0.8 beta=0.5 seed=1 train=150 val=150 elapsed=0.0s

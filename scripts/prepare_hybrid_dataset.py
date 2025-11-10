@@ -91,7 +91,12 @@ def build_demo_pairs(triples: List[Tuple[str, str, str]],
                      sns_model: Optional[str] = None,
                      sns_device: str = "cpu",
                      sns_batch_size: int = 256,
-                     emb_cache_npz: Optional[str] = None) -> None:
+                     emb_cache_npz: Optional[str] = None,
+                     render_images: bool = True,
+                     max_images: int = 100,
+                     num_workers: int = 0,
+                     start_idx: int = 0,
+                     end_idx: int = -1) -> None:
     os.makedirs(out_dir, exist_ok=True)
     images_dir = os.path.join(out_dir, "images")
     os.makedirs(images_dir, exist_ok=True)
@@ -99,13 +104,18 @@ def build_demo_pairs(triples: List[Tuple[str, str, str]],
     out_path = os.path.join(out_dir, "train.jsonl")
     val_path = os.path.join(out_dir, "val.jsonl")
 
-    total = min(limit, len(triples))
+    # slice window if requested, then apply limit
+    if end_idx is not None and end_idx >= 0:
+        triples_window = triples[start_idx:end_idx]
+    else:
+        triples_window = triples[start_idx:]
+    total = min(limit, len(triples_window))
     half = max(1, total // 2) if total >= 2 else 1
 
     id2text = _load_entity_texts(entity_texts_jsonl)
     adj = _build_adjacency(triples)
     # Optional embedding cache
-    emb_cache: Dict[str, np.ndarray] = {}
+    emb_cache: Dict[str, object] = {}
     if emb_cache_npz and os.path.exists(emb_cache_npz):
         try:
             import numpy as _np
@@ -124,8 +134,9 @@ def build_demo_pairs(triples: List[Tuple[str, str, str]],
         ranker = None
 
     with open(out_path, "w", encoding="utf-8") as f_train, open(val_path, "w", encoding="utf-8") as f_val:
+        # single-item fast-path
         if total == 1:
-            h, r, t = triples[0]
+            h, r, t = triples_window[0]
             img_path = os.path.join(images_dir, f"sample_0.png")
             selected = []
             if use_sns and ranker is not None:
@@ -134,7 +145,10 @@ def build_demo_pairs(triples: List[Tuple[str, str, str]],
                 )
             if not selected:
                 selected = [(h, r, t)]
-            render_kg(selected, img_path)
+            if render_images and 0 < max_images:
+                render_kg(selected, img_path)
+            else:
+                img_path = None
 
             lines = [
                 f"Question: Given the KG snippet, what is the relation between {h} and {t}?",
@@ -149,7 +163,8 @@ def build_demo_pairs(triples: List[Tuple[str, str, str]],
             f_val.write(json.dumps(item, ensure_ascii=False) + "\n")
             return
 
-        for idx, (h, r, t) in enumerate(triples[:total]):
+        tasks: List[Tuple[List[Tuple[str, str, str]], str]] = []
+        for idx, (h, r, t) in enumerate(triples_window[:total]):
             img_path = os.path.join(images_dir, f"sample_{idx}.png")
             if use_sns and ranker is not None:
                 selected = _select_sns_neighbors(
@@ -157,7 +172,10 @@ def build_demo_pairs(triples: List[Tuple[str, str, str]],
                 )
             else:
                 selected = [(h, r, t)]
-            render_kg(selected, img_path)
+            if render_images and idx < max_images:
+                tasks.append((selected, img_path))
+            else:
+                img_path = None
 
             lines = [
                 f"Question: Given the KG snippet, what is the relation between {h} and {t}?",
@@ -180,6 +198,22 @@ def build_demo_pairs(triples: List[Tuple[str, str, str]],
                 f_train.write(json.dumps(item, ensure_ascii=False) + "\n")
             else:
                 f_val.write(json.dumps(item, ensure_ascii=False) + "\n")
+
+    # After writing JSONL, render images (optionally in parallel)
+    if render_images:
+        if 'tasks' in locals() and tasks:
+            if num_workers and num_workers > 0:
+                from concurrent.futures import ProcessPoolExecutor
+                # map render_kg over two iterables (edges, path) to avoid non-picklable lambdas
+                with ProcessPoolExecutor(max_workers=num_workers) as ex:
+                    list(ex.map(
+                        render_kg,
+                        (edges for edges, _ in tasks),
+                        (path for _, path in tasks),
+                    ))
+            else:
+                for edges, path in tasks:
+                    render_kg(edges, path)
 
     # Save embedding cache if requested
     if emb_cache_npz and use_sns:
@@ -208,6 +242,12 @@ if __name__ == "__main__":
     parser.add_argument("--sns_device", type=str, default="cpu", help="cuda or cpu")
     parser.add_argument("--sns_batch_size", type=int, default=256)
     parser.add_argument("--emb_cache_npz", type=str, default=None, help="Path to NPZ cache for entity embeddings")
+    # Rendering and parallelism controls
+    parser.add_argument("--no_images", action="store_true", help="Skip rendering KG images")
+    parser.add_argument("--max_images", type=int, default=100, help="Render at most N images")
+    parser.add_argument("--num_workers", type=int, default=0, help="Parallel image workers (0=serial)")
+    parser.add_argument("--start_idx", type=int, default=0, help="Start index (inclusive) for slicing")
+    parser.add_argument("--end_idx", type=int, default=-1, help="End index (exclusive) for slicing; -1 means till end")
     args = parser.parse_args()
 
     triples = read_triples_jsonl(args.triples_jsonl)
@@ -223,4 +263,9 @@ if __name__ == "__main__":
         sns_device=args.sns_device,
         sns_batch_size=args.sns_batch_size,
         emb_cache_npz=args.emb_cache_npz,
+        render_images=(not args.no_images),
+        max_images=args.max_images,
+        num_workers=args.num_workers,
+        start_idx=args.start_idx,
+        end_idx=args.end_idx,
     )
