@@ -8,3 +8,6 @@
 /outputs/
 /checkpoints/
 /data/primekg_raw/
+experiments/
+experiments_local_backup/
+*.tgz
