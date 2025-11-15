@@ -162,6 +162,20 @@ Recommended order to read:
 - If you need to track large artifacts, consider Git LFS (`https://git-lfs.github.com`).
 - Otherwise, use the provided download/subset scripts to reproduce datasets locally.
 
+## Novelty/Contributions
+
+This work extends SNS, GITA, and GraphWiz with an end-to-end, reproducible pipeline for PrimeKG-scale knowledge graphs. Key innovations include:
+
+- **Dual-stage caching system**: 12-character subset IDs, rich cache manifests, and flat run manifests, ensuring deterministic reruns across Roar and local machines.
+
+- **HPC-aware rendering workflow**: Throttles Matplotlib/NetworkX image generation with `--max_images`, `--num_workers`, and guards visual regressions via PNG snapshot tests.
+
+- **Groq-driven DPO ablation tooling**: Configurable threshold/β grids with summary stats/plots, tailored to KG data and multi-agent isolation.
+
+- **Multi-agent enforcement**: Worktrees + Plan Mode CI gate + bundles for parallel development without file conflicts.
+
+See `plan.md` for implementation details and `experiments/` for ablation results.
+
 ## Licenses and acknowledgements
 
 - Original third-party licenses are retained in `third_party_licenses/`.
