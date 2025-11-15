@@ -170,9 +170,7 @@ This work extends SNS, GITA, and GraphWiz with an end-to-end, reproducible pipel
 
 - **HPC-aware rendering workflow**: Throttles Matplotlib/NetworkX image generation with `--max_images`, `--num_workers`, and guards visual regressions via PNG snapshot tests.
 
-- **Groq-driven DPO ablation tooling**: Configurable threshold/β grids with summary stats/plots, tailored to KG data and multi-agent isolation.
-
-- **Multi-agent enforcement**: Worktrees + Plan Mode CI gate + bundles for parallel development without file conflicts.
+- **Groq-driven DPO ablation tooling**: Configurable threshold/β grids with summary stats/plots, tailored to KG data.
 
 See `plan.md` for implementation details and `experiments/` for ablation results.
 
