@@ -172,7 +172,7 @@ This work extends SNS, GITA, and GraphWiz with an end-to-end, reproducible pipel
 
 - **Groq-driven DPO ablation tooling**: Configurable threshold/β grids with summary stats/plots, tailored to KG data.
 
-See `plan.md` for implementation details and `experiments/` for ablation results.
+See `experiments/` for ablation results.
 
 ## Licenses and acknowledgements
 
